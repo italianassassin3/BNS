@@ -18,7 +18,9 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -37,13 +39,17 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.Identifier;
 import org.altbeacon.beacon.MonitorNotifier;
+import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -51,7 +57,7 @@ import java.util.Set;
  * Beacon Consumer es para manejar el consumo de la informacion de los beacons
  */
 
-public class MainActivity extends FragmentActivity implements OnMapReadyCallback, BeaconConsumer {
+public class MainActivity extends FragmentActivity implements OnMapReadyCallback,BeaconConsumer, RangeNotifier {
 /** BEACON LAYOUT FORMATS
  *
  * ALTBEACON   "m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"
@@ -70,7 +76,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     private String EDDYSTONE_TLM= "s:0-1=feaa,m:2-2=20,d:3-3,d:4-5,d:6-7,d:8-11,d:12-15";
     private String EDDYSTONE= "s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19";
-
+    private static final String TAG = "MainActivity";
 
 
     GoogleMap map;
@@ -123,7 +129,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private Set<BluetoothDevice> pairedDevices;
 
     //Manejador de Beacons.
-    private BeaconManager beaconManager =null;
+    private BeaconManager mBeaconManager =null;
 
 
     //Al momento de correr la aplicacion
@@ -141,9 +147,20 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         cycle = 0;
 
         //Manejador de Bluetooth beacons.
-        beaconManager =BeaconManager.getInstanceForApplication(this);
-        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(EDDYSTONE));
-        beaconManager.bind(this);
+//        beaconManager =BeaconManager.getInstanceForApplication(this);
+//        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(EDDYSTONE));
+//        beaconManager.bind(this);
+
+        mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
+        // Detect the main Eddystone-UID frame:
+        mBeaconManager.getBeaconParsers().add(new BeaconParser().
+                setBeaconLayout(BeaconParser.EDDYSTONE_UID_LAYOUT));
+        // Detect the telemetry Eddystone-TLM frame:
+        mBeaconManager.getBeaconParsers().add(new BeaconParser().
+                setBeaconLayout(BeaconParser.EDDYSTONE_TLM_LAYOUT));
+        mBeaconManager.bind(this);
+
+
 
 
         //variables de prueba, Points of interest
@@ -325,9 +342,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 System.out.println(PackageManager.PERMISSION_GRANTED);
 
 
-
-
-
                 //usara gps, se actualiza cada 5 segundos o cada 2 metros de diferencia, el listener es el ultimo.
                 if (ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
@@ -346,24 +360,31 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     return;
                 }
 
-                lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
-                        locationManager.getLastKnownLocation("gps").getLongitude());
-
-
-                map.setMyLocationEnabled(true);
-                map.getUiSettings().setMyLocationButtonEnabled(false);
-            System.out.println("im here");
+                /**
+                 * is Provider Enabled verifica que el dispositivo no haya apagado los servicios de localizacion
+                 * Verifica que este encendido, no es directamente relacionado a los permisos.
+                 */
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                            lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
+                            locationManager.getLastKnownLocation("gps").getLongitude());
+                            map.setMyLocationEnabled(true);
+                            map.getUiSettings().setMyLocationButtonEnabled(false);
+                            System.out.println("im here");
 //              currentMarkers.add( map.addMarker(new MarkerOptions().position(lastLocation).title("PRUEBA")) );
+                    try {
+                            locationManager.requestLocationUpdates("gps", 5000, 2, locationListener);
+                            map.animateCamera(CameraUpdateFactory.newLatLngZoom(lastLocation, 20));
+                    } catch (Exception e) {
+                        System.out.println("Algo raro paso");
+                    }
+                }
 
-            try {
+                else{
 
-                locationManager.requestLocationUpdates("gps", 5000, 2, locationListener);
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(lastLocation,20));
+                    map.setMyLocationEnabled(false);
+                    System.out.println("El usuario no tiene los servicios de localizacion encendido");
+                }
             }
-            catch (Exception e){
-                System.out.println("Algo raro paso");
-            }
-                                            }
                                         });
 
     }
@@ -447,26 +468,51 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    // Metodos que provienen de la clase de BeaconManager, requisitos para su implementacion.
+    public void onBeaconServiceConnect() {
+        Region region = new Region("all-beacons-region", null, null, null);
+        try {
+            mBeaconManager.startRangingBeaconsInRegion(region);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        mBeaconManager.addRangeNotifier(this);
+    }
 
     @Override
-    public void onBeaconServiceConnect() {
+    public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
+        for (Beacon beacon: beacons) {
+            if (beacon.getServiceUuid() == 0xfeaa && beacon.getBeaconTypeCode() == 0x00) {
+                // This is a Eddystone-UID frame
+                Identifier namespaceId = beacon.getId1();
+                Identifier instanceId = beacon.getId2();
+                Log.d(TAG, "I see a beacon transmitting namespace id: "+namespaceId+
+                        " and instance id: "+instanceId+
+                        " approximately "+beacon.getDistance()+" meters away.");
 
-        beaconManager.setMonitorNotifier(new MonitorNotifier() {
-            @Override
-            public void didEnterRegion(Region region) {
+                // Do we have telemetry data?
+                if (beacon.getExtraDataFields().size() > 0) {
+                    long telemetryVersion = beacon.getExtraDataFields().get(0);
+                    long batteryMilliVolts = beacon.getExtraDataFields().get(1);
+                    long pduCount = beacon.getExtraDataFields().get(3);
+                    long uptime = beacon.getExtraDataFields().get(4);
 
+                    Log.d(TAG, "The above beacon is sending telemetry version "+telemetryVersion+
+                            ", has been up for : "+uptime+" seconds"+
+                            ", has a battery level of "+batteryMilliVolts+" mV"+
+                            ", and has transmitted "+pduCount+" advertisements.");
+
+                }
             }
-
-            @Override
-            public void didExitRegion(Region region) {
-
-            }
-
-            @Override
-            public void didDetermineStateForRegion(int i, Region region) {
-
-            }
-        });
-
+        }
     }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mBeaconManager.unbind(this);
+    }
+
+
+
 }
