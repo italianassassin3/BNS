@@ -1,6 +1,7 @@
 package com.example.rumguide_x;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
@@ -47,6 +48,7 @@ import org.altbeacon.beacon.Identifier;
 import org.altbeacon.beacon.MonitorNotifier;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
+import org.altbeacon.beacon.Beacon;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -104,8 +106,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     private BluetoothManager bluetoothManager;
 
+    private BeaconManager mBeaconManager =null;
 
-    private boolean gpsEnabled = false;
 
 
     //Lista de los markers activos
@@ -113,9 +115,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     //
 //    private ArrayList<Marker> interestPoints = new ArrayList<>();
     private ArrayList<Places> celis1 = new ArrayList<>();
-
     private ArrayList<Places> celis2 = new ArrayList<>();
-
     private ArrayList<Places> celis3 = new ArrayList<>();
 
 
@@ -129,7 +129,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private Set<BluetoothDevice> pairedDevices;
 
     //Manejador de Beacons.
-    private BeaconManager mBeaconManager =null;
+
 
 
     //Al momento de correr la aplicacion
@@ -225,13 +225,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
 
-
+                if(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
                 // map.setMyLocationEnabled(true);
                 //usara gps, se actualiza cada 5 segundos o cada 2 metros de diferencia, el listener es el ultimo.
-                lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
+                    lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
                         locationManager.getLastKnownLocation("gps").getLongitude());
 
-                System.out.println("Se removeran los marcadores activos ");
+                    System.out.println("Se removeran los marcadores activos ");
                 while (currentMarkers.size() != 0) {
                     currentMarkers.get(0).remove();
                     currentMarkers.remove(0);
@@ -239,19 +239,22 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 }
 
                 changeFloor();
-                //map.addGroundOverlay(celis_piso1);
-//                map.addGroundOverlay(new GroundOverlayOptions()
-//                        .image( BitmapDescriptorFactory.fromResource(R.drawable.celis_piso1))
-//                        .position(lastLocation,100));
-
 
             }
+                else{
+                    /**
+                     * mensaje de alerta, Le falta polish, dar opcion de que encienda los servicios.
+                     */
+                    AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+                    builder.setTitle("Location Services Disabled");
+                    builder.setMessage("Please turn on location services to continue with this operation.");
+                    builder.setIcon(R.drawable.common_google_signin_btn_icon_dark);
+                    builder.show();
+                }
+        }
         });
 
-
         bluetoothManager= (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
-
-
 
         // Maneja el uso del gps.
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
@@ -336,7 +339,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
 
-
                 System.out.println(Manifest.permission.ACCESS_FINE_LOCATION);
 
                 System.out.println(PackageManager.PERMISSION_GRANTED);
@@ -344,8 +346,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                 //usara gps, se actualiza cada 5 segundos o cada 2 metros de diferencia, el listener es el ultimo.
                 if (ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
+
                     // here to request the missing permissions, and then overriding
                     //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
                     //                                          int[] grantResults)
@@ -381,6 +382,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                 else{
 
+                    AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+                    builder.setTitle("Location Services Disabled");
+                    builder.setMessage("Please turn on location services to continue with this operation.");
+                    builder.setIcon(R.drawable.common_google_signin_btn_icon_dark);
+                    builder.show();
+
+
                     map.setMyLocationEnabled(false);
                     System.out.println("El usuario no tiene los servicios de localizacion encendido");
                 }
@@ -399,18 +407,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     map.setMaxZoomPreference(500);
 
-//    map.addGroundOverlay(new GroundOverlayOptions()
-//            .image(BitmapDescriptorFactory.fromResource(R.drawable.googleg_standard_color_18))
-//            .position(cords,20,20));
-    //
-
-//    map.addGroundOverlay(new GroundOverlayOptions().image(BitmapDescriptorFactory.
-//            fromResource(R.drawable.))
-//            .position(new LatLng(18.20959833,-67.13639666),40).anchor(1,0).bearing(30));
-
 }
 
+    /**
+     * Simulates changing floor within a building structures, currenlty with a button
+     * in the future this action will be triggered by bluetooth beacons
+     */
     public void changeFloor() {
+
         if(cycle ==0){
             if(activeOverlay !=null){
             activeOverlay.remove();}
@@ -462,6 +466,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             activeOverlay= map.addGroundOverlay(celis_piso3);
             cycle=0;
 
+            // Elimina los markers relacionados al overlay presentado.
             while(currentMarkers.size()!=0){
                 currentMarkers.get(0).remove();
             }
@@ -511,6 +516,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     public void onPause() {
         super.onPause();
         mBeaconManager.unbind(this);
+
     }
 
 
