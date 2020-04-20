@@ -11,7 +11,7 @@ import android.util.Log;
 import org.altbeacon.beacon.AltBeacon;
 import org.altbeacon.beacon.Beacon;
 
-/**
+/**Simulador modificado por Bernardo J Sein, originalmente creado por ->
  * Created by Matt Tyler on 4/18/14.
  */
 public class TimedBeaconSimulator implements org.altbeacon.beacon.simulator.BeaconSimulator {
@@ -30,7 +30,7 @@ public class TimedBeaconSimulator implements org.altbeacon.beacon.simulator.Beac
      *
      * Any simulated beacons will automatically be ignored when building for production.
      */
-    public boolean USE_SIMULATED_BEACONS = false;
+    public boolean USE_SIMULATED_BEACONS = true;
 
     /**
      *  Creates empty beacons ArrayList.
@@ -79,14 +79,15 @@ public class TimedBeaconSimulator implements org.altbeacon.beacon.simulator.Beac
     public void createTimedSimulatedBeacons(){
         if (USE_SIMULATED_BEACONS){
             beacons = new ArrayList<Beacon>();
+            //id1 es el id del manufacturador, Solo necesitamos usar el txPower para distancia y el Blutooth name para identificar.
             Beacon beacon1 = new AltBeacon.Builder().setId1("DF7E1C79-43E9-44FF-886F-1D1F7DA6997A")
-                    .setId2("1").setId3("1").setRssi(-55).setTxPower(-55).build();
+                    .setId2("1").setId3("1").setRssi(-55).setTxPower(-55).setBluetoothName("Celis1-x").build();
             Beacon beacon2 = new AltBeacon.Builder().setId1("DF7E1C79-43E9-44FF-886F-1D1F7DA6997A")
-                    .setId2("1").setId3("2").setRssi(-55).setTxPower(-55).build();
+                    .setId2("1").setId3("2").setRssi(-55).setTxPower(-55).setBluetoothName("Celis2-x").build();
             Beacon beacon3 = new AltBeacon.Builder().setId1("DF7E1C79-43E9-44FF-886F-1D1F7DA6997A")
-                    .setId2("1").setId3("3").setRssi(-55).setTxPower(-55).build();
+                    .setId2("1").setId3("3").setRssi(-55).setTxPower(-55).setBluetoothName("Celis3-x").build();
             Beacon beacon4 = new AltBeacon.Builder().setId1("DF7E1C79-43E9-44FF-886F-1D1F7DA6997A")
-                    .setId2("1").setId3("4").setRssi(-55).setTxPower(-55).build();
+                    .setId2("1").setId3("4").setRssi(-55).setTxPower(-55).setBluetoothName("Celis4-x").build();
             beacons.add(beacon1);
             beacons.add(beacon2);
             beacons.add(beacon3);

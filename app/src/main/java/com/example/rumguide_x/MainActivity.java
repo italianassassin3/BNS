@@ -5,14 +5,12 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
+
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.BluetoothLeScanner;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -28,31 +26,37 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
 import org.altbeacon.beacon.Identifier;
-import org.altbeacon.beacon.MonitorNotifier;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
-import org.altbeacon.beacon.Beacon;
+import org.altbeacon.beacon.simulator.BeaconSimulator;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Array;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Scanner;
 import java.util.Set;
+
 
 /**
  *On Map Ready Call back es para el google maps
@@ -89,27 +93,35 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     //entero para ciclar atraves de los piso de un edificio.
     private int cycle;
 
-
+    /**
+     * Layout variables
+     */
     private Button locateButton;
     private TextView txt;
     private LatLng lastLocation;
     private Button changeFloorButton;
     private Button layerButton;
+    private Button lookForBeacons;
+    private Button stopSearch;
 
 
-
-
+    /**
+     * Manager variables
+     */
     //Maneja el location.
     private LocationManager locationManager;
     //esta pendiente del cambio en localizacion.
     private LocationListener locationListener;
-
     private BluetoothManager bluetoothManager;
 
+    //Permite interactuar con los beacons
     private BeaconManager mBeaconManager =null;
 
-
-
+    //Representa el criterio de campos con los que buscamos los beacons
+    private Region mRegion;
+    /**
+     * Lists Variables
+     */
     //Lista de los markers activos
     private ArrayList<Marker> currentMarkers = new ArrayList<>();
     //
@@ -118,21 +130,18 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<Places> celis2 = new ArrayList<>();
     private ArrayList<Places> celis3 = new ArrayList<>();
 
-
+    /**
+     * GroundOverlay definitions
+     */
     //Overlays disponibles, floor plans
     GroundOverlayOptions celis_piso1;
     GroundOverlayOptions celis_piso2;
     GroundOverlayOptions celis_piso3;
 
-//Maneja los dispositivos Bluetooth, Aun no se utiliza.
-    private BluetoothAdapter BA;
-    private Set<BluetoothDevice> pairedDevices;
+    /**
+     * Al momento de correr la aplicacion se comienza por este metodo
+     */
 
-    //Manejador de Beacons.
-
-
-
-    //Al momento de correr la aplicacion
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -143,27 +152,52 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
                     mapFragment.getMapAsync(this);
 
+        cycle = 0;//Variable para recorrer a traves de los pisos de stefani, solo para testing.
+        //Actualmente no se esta utilizando.
+        bluetoothManager= (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
 
-        cycle = 0;
+        // Maneja el uso del gps.
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        //Codigo de prueba y debug, verificar error.
+        if(locationManager!= null) Log.d("Loaction", "LocationManager no es nulo");
+        else{Log.d("Loaction", "LocationManager es nulo");}
 
         //Manejador de Bluetooth beacons.
 //        beaconManager =BeaconManager.getInstanceForApplication(this);
 //        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(EDDYSTONE));
 //        beaconManager.bind(this);
+        //     ..\\ retrocede
 
-        mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
-        // Detect the main Eddystone-UID frame:
-        mBeaconManager.getBeaconParsers().add(new BeaconParser().
-                setBeaconLayout(BeaconParser.EDDYSTONE_UID_LAYOUT));
-        // Detect the telemetry Eddystone-TLM frame:
-        mBeaconManager.getBeaconParsers().add(new BeaconParser().
-                setBeaconLayout(BeaconParser.EDDYSTONE_TLM_LAYOUT));
-        mBeaconManager.bind(this);
+        /**
+         * Codigo en prueba, para obtener los marcadores desde text file.
+         */
+        Lector lector;
+        lector = new Lector(this);
+        ArrayList<String> fileLines =lector.readLine("test.txt");
+        for (String string : fileLines)
+            Log.d("FILE LINES:", string);
 
+
+        /**
+         *Codigo encargado de inicializar el manejador de Beacons.
+         */
+        mBeaconManager = BeaconManager.getInstanceForApplication(this);
+
+        //Fijamos el protocolo Beacon Eddystone, el formato que se estara buscando.
+        mBeaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BeaconParser.EDDYSTONE_UID_LAYOUT));
+
+        //Arreglo que contiene los identificadores que vamos a estar buscando en los beacons.
+        //En este caso vamos a buscar sin criterio, por eso esta vacio.
+        ArrayList<Identifier> identifiers =new ArrayList<>();
+
+        //Entiendo que es la region que estaremos buscando de beacons. Para propositos de prueba escucharemos todos los beacons.
+        //los identifiers se utilizan con beacon.getIdentifier, para seleccionar el que deseamos.
+        mRegion = new Region("AllBeaconsRegion",identifiers);
 
 
 
         //variables de prueba, Points of interest
+
         celis1.add(new Places("C-100", new LatLng(18.2095799, -67.1412221)));
         celis1.add(new Places("C-101", new LatLng(18.2095064, -67.1413221)));
         celis1.add(new Places("C-102", new LatLng(18.2094404, -67.1412221)));
@@ -180,17 +214,26 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         celis2.add(new Places("C-205", new LatLng(18.2090405, -67.1410321)));
 
 
-        //Manejando lo que hacen los botones.
-        //Find view by id busca el elemento del view.
-        //Para el boton en este caso es el id locateme.
-        //Esto asocia la funcion con el boton.
+        /**
+         * Manejando lo que hacen los botones.
+         *         //Find view by id busca el elemento del view.
+         *         //Para el boton en este caso es el id locateme.
+         *         //Esto asocia la funcion con el boton.
+         *
+         *
+         */
+
         locateButton = (Button) findViewById(R.id.locateme);
         txt = findViewById(R.id.TEXTOPRUEBA);
+
 
         //Boton de simulacion de cambio de pisos.
         changeFloorButton = findViewById(R.id.floorChange);
 
+        //Asigna el boton grafico a la varible del boton.
         layerButton = findViewById(R.id.layerButton);
+
+        //Asigna funcionalidad al boton.
         layerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -202,7 +245,37 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+        lookForBeacons= findViewById(R.id.beaconsearch);
+        lookForBeacons.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
+                    System.out.println("No se tiene permiso");
+                }
+                else{
+                    prepareDetection();
+                }
 
+//                TimedBeaconSimulator emul ;
+//                emul = new TimedBeaconSimulator();
+//                emul.createBasicSimulatedBeacons();
+//                BeaconManager.setBeaconSimulator(emul);
+//                mBeaconManager= BeaconManager.getInstanceForApplication(getBaseContext());
+//                mBeaconManager.bind(bc);
+//               System.out.println( BeaconManager.isAndroidLScanningDisabled());
+                //onBeaconServiceConnect();
+
+                //BeaconManager.getBeaconSimulator();
+            }
+        });
+
+        stopSearch = findViewById(R.id.stopSearch);
+        stopSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopDetectingBeacons();
+            }
+        });
         //Localizacion del edificio de Celis
         LatLng celis = new LatLng(18.2093602, -67.1408958);
 
@@ -228,8 +301,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 if(locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
                 // map.setMyLocationEnabled(true);
                 //usara gps, se actualiza cada 5 segundos o cada 2 metros de diferencia, el listener es el ultimo.
-                    lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
-                        locationManager.getLastKnownLocation("gps").getLongitude());
+//                    lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
+//                        locationManager.getLastKnownLocation("gps").getLongitude());
 
                     System.out.println("Se removeran los marcadores activos ");
                 while (currentMarkers.size() != 0) {
@@ -254,10 +327,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
         });
 
-        bluetoothManager= (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
 
-        // Maneja el uso del gps.
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
 
         //Metodos ya creados por el listener.
@@ -308,11 +378,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             configureButton();
         }
 
-        BA = BluetoothAdapter.getDefaultAdapter();
+
 
     }
-
-
+    //Termina el metodo inicial, onCreate.
 
 
     @Override
@@ -326,6 +395,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     map.setMyLocationEnabled(true);
                     //Me permite usar mi propio boton.
                     map.getUiSettings().setMyLocationButtonEnabled(false);
+
                     System.out.println("Se ejecuto On request permision");
                 }
                 return;
@@ -333,16 +403,12 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     //Se encarga de ejecutar la funcion cuando se preciona el boton.
+    //Refactorizar luego, remover de la funcion configure button.
     public void configureButton() {
         locateButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
-
-                System.out.println(Manifest.permission.ACCESS_FINE_LOCATION);
-
-                System.out.println(PackageManager.PERMISSION_GRANTED);
-
 
                 //usara gps, se actualiza cada 5 segundos o cada 2 metros de diferencia, el listener es el ultimo.
                 if (ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -370,25 +436,26 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                             locationManager.getLastKnownLocation("gps").getLongitude());
                             map.setMyLocationEnabled(true);
                             map.getUiSettings().setMyLocationButtonEnabled(false);
+                            map.getUiSettings().setMapToolbarEnabled(false);
+
                             System.out.println("im here");
 //              currentMarkers.add( map.addMarker(new MarkerOptions().position(lastLocation).title("PRUEBA")) );
                     try {
                             locationManager.requestLocationUpdates("gps", 5000, 2, locationListener);
                             map.animateCamera(CameraUpdateFactory.newLatLngZoom(lastLocation, 20));
                     } catch (Exception e) {
-                        System.out.println("Algo raro paso");
+                        System.out.println("Se produjo error al ubicar");
                     }
                 }
 
                 else{
-
+                    //Muestra un mensaje al usuario sobre falta de Location.
                     AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
                     builder.setTitle("Location Services Disabled");
                     builder.setMessage("Please turn on location services to continue with this operation.");
                     builder.setIcon(R.drawable.common_google_signin_btn_icon_dark);
                     builder.show();
-
-
+                    //
                     map.setMyLocationEnabled(false);
                     System.out.println("El usuario no tiene los servicios de localizacion encendido");
                 }
@@ -404,8 +471,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     LatLng cords= new LatLng(18.210136,-67.139733);
    // map.addMarker(new MarkerOptions().position(cords).title("PRUEBA'"));
     map.moveCamera(CameraUpdateFactory.newLatLngZoom(cords,14));
-
-    map.setMaxZoomPreference(500);
+    map.getUiSettings().setMapToolbarEnabled(false);
+    map.getUiSettings().setMyLocationButtonEnabled(false);
+    map.getUiSettings().setCompassEnabled(false);
+    map.setMaxZoomPreference(1000);
 
 }
 
@@ -416,8 +485,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     public void changeFloor() {
 
         if(cycle ==0){
-            if(activeOverlay !=null){
-            activeOverlay.remove();}
+            if(activeOverlay !=null){ activeOverlay.remove();}
 
             txt.setText("edificio celis, Piso 1");
             activeOverlay= map.addGroundOverlay(celis_piso1);
@@ -427,14 +495,12 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
         for(int i=0; i<celis1.size();i++) {
             currentMarkers.add(map.addMarker(new MarkerOptions().position(celis1.get(i).getCords()).title(celis1.get(i).getName())));
+
             }
         }
-
 ////////////////////////////
         else if(cycle==1){
-            if(activeOverlay !=null){
-                activeOverlay.remove();}
-
+            if(activeOverlay !=null){ activeOverlay.remove();}
 
             txt.setText("edificio celis, Piso 2");
             activeOverlay=map.addGroundOverlay(celis_piso2);
@@ -450,8 +516,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         }
         else if(cycle==2){
-            if(activeOverlay !=null){
-                activeOverlay.remove();}
+            if(activeOverlay !=null){ activeOverlay.remove();}
 
             while(currentMarkers.size()!=0){
                 currentMarkers.get(0).remove();
@@ -475,41 +540,71 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     // Metodos que provienen de la clase de BeaconManager, requisitos para su implementacion.
     public void onBeaconServiceConnect() {
-        Region region = new Region("all-beacons-region", null, null, null);
+        //Empezamos a buscar beacons.
         try {
-            mBeaconManager.startRangingBeaconsInRegion(region);
+            mBeaconManager.startRangingBeaconsInRegion(mRegion);
+            Log.d("Beacons", "Se comenzo la busqueda de beacons");
         } catch (RemoteException e) {
             e.printStackTrace();
         }
+        //Notifica luego que se acabe el periodo de lectura
         mBeaconManager.addRangeNotifier(this);
+
+//        Region region = new Region("all-beacons-region", null, null, null);
+//        try {
+//            mBeaconManager.startRangingBeaconsInRegion(region);
+//            mBeaconManager.bind(this);
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
+//        mBeaconManager.addRangeNotifier(this);
     }
 
+    /**
+     * Este metodo se llama cada 6s, o mejor dicho los 6000ms que se pasaron como parametros en la funcion anterior
+     *
+     * @param beacons
+     * @param region
+     */
     @Override
     public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
-        for (Beacon beacon: beacons) {
-            if (beacon.getServiceUuid() == 0xfeaa && beacon.getBeaconTypeCode() == 0x00) {
-                // This is a Eddystone-UID frame
-                Identifier namespaceId = beacon.getId1();
-                Identifier instanceId = beacon.getId2();
-                Log.d(TAG, "I see a beacon transmitting namespace id: "+namespaceId+
-                        " and instance id: "+instanceId+
-                        " approximately "+beacon.getDistance()+" meters away.");
+        ArrayList<String> beaconListF= new ArrayList<>();
 
-                // Do we have telemetry data?
-                if (beacon.getExtraDataFields().size() > 0) {
-                    long telemetryVersion = beacon.getExtraDataFields().get(0);
-                    long batteryMilliVolts = beacon.getExtraDataFields().get(1);
-                    long pduCount = beacon.getExtraDataFields().get(3);
-                    long uptime = beacon.getExtraDataFields().get(4);
+        if(beacons.size()==0){
+            Toast.makeText(getApplicationContext(),"No Beacons Found", Toast.LENGTH_SHORT).show();
 
-                    Log.d(TAG, "The above beacon is sending telemetry version "+telemetryVersion+
-                            ", has been up for : "+uptime+" seconds"+
-                            ", has a battery level of "+batteryMilliVolts+" mV"+
-                            ", and has transmitted "+pduCount+" advertisements.");
-
-                }
-            }
         }
+        for(Beacon beacon : beacons){
+            beaconListF.add(beacon.getBluetoothName());
+//            Toast.makeText(getApplicationContext(),beacon.getBluetoothName(),Toast.LENGTH_LONG).show();
+        }
+        Toast.makeText(getApplicationContext(),beaconListF.toString(),Toast.LENGTH_LONG).show();
+
+
+//        for (Beacon beacon: beacons) {
+//            if (beacon.getServiceUuid() == 0xfeaa && beacon.getBeaconTypeCode() == 0x00) {
+//                // This is a Eddystone-UID frame
+//                Identifier namespaceId = beacon.getId1();
+//                Identifier instanceId = beacon.getId2();
+//                Log.d(TAG, "I see a beacon transmitting namespace id: "+namespaceId+
+//                        " and instance id: "+instanceId+
+//                        " approximately "+beacon.getDistance()+" meters away.");
+//
+//                // Do we have telemetry data?
+//                if (beacon.getExtraDataFields().size() > 0) {
+//                    long telemetryVersion = beacon.getExtraDataFields().get(0);
+//                    long batteryMilliVolts = beacon.getExtraDataFields().get(1);
+//                    long pduCount = beacon.getExtraDataFields().get(3);
+//                    long uptime = beacon.getExtraDataFields().get(4);
+//
+//                    Log.d(TAG, "The above beacon is sending telemetry version "+telemetryVersion+
+//                            ", has been up for : "+uptime+" seconds"+
+//                            ", has a battery level of "+batteryMilliVolts+" mV"+
+//                            ", and has transmitted "+pduCount+" advertisements.");
+//
+//                }
+//            }
+//        }
     }
 
     @Override
@@ -517,6 +612,50 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         super.onPause();
         mBeaconManager.unbind(this);
 
+    }
+
+    private void prepareDetection(){
+        //Comienza a correr el emulador de beacons.
+        TimedBeaconSimulator simulator= new TimedBeaconSimulator();
+        simulator.createTimedSimulatedBeacons();
+        BeaconManager.setBeaconSimulator(simulator);
+
+        BluetoothAdapter mBluetoothApadter = BluetoothAdapter.getDefaultAdapter();
+        //Verificar informacion relacionada a la disponibilidad de Bluetooth y su acceso.
+        if(mBluetoothApadter ==null){
+            System.out.println("Este dispositivo no soporta bluetooth");
+            Toast.makeText(getApplicationContext(),"No soporta Bluetooth",Toast.LENGTH_LONG).show();
+        }
+        else if(mBluetoothApadter.isEnabled()){
+            Toast.makeText(getApplicationContext(),"Se comenzo la busqueda de beacons",Toast.LENGTH_LONG).show();
+            startDetectingBeacons();
+        }
+        else{
+            Toast.makeText(getApplicationContext(),"Verificar bluetooth",Toast.LENGTH_LONG).show();
+            Intent enableBT = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+            startActivity(enableBT);
+        }
+    }
+    private void startDetectingBeacons(){
+        //Fijar un periodo de lectura de beacons, 6000 milisegundos
+        mBeaconManager.setForegroundBetweenScanPeriod(10000);
+        //Enlazar con el servicio de los beacons
+        mBeaconManager.bind(this);
+
+
+    }
+    private void stopDetectingBeacons(){
+        try{
+            mBeaconManager.startRangingBeaconsInRegion(mRegion);
+            Toast.makeText(this,"Deteniendo la busqueda",Toast.LENGTH_SHORT).show();
+        }
+        catch (RemoteException e){
+            Toast.makeText(this,"Se produjo un error al detener la busqueda",Toast.LENGTH_SHORT).show();
+
+        }
+        //Remover los beacons encontrados en el region
+        mBeaconManager.removeAllRangeNotifiers();
+        mBeaconManager.unbind(this);
     }
 
 
