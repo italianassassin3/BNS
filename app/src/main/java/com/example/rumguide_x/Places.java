@@ -16,6 +16,12 @@ this.name=name;
 this.cords=cords;
     }
 
+    public  Places(String name, LatLng cords,String type){
+        this.type=type;
+        this.name=name;
+        this.cords=cords;
+    }
+
     public Places(String name, String location, LatLng cords, String floor, String id, String type) {
         this.name = name;
         this.location = location;

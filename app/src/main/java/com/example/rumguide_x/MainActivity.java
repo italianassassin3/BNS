@@ -197,13 +197,15 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         //variables de prueba, Points of interest
-
+        //Places es una clase creada para formatear la data de los marcadores.
+        //Lat=X Lng=Y
         celis1.add(new Places("C-100", new LatLng(18.2095799, -67.1412221)));
         celis1.add(new Places("C-101", new LatLng(18.2095064, -67.1413221)));
         celis1.add(new Places("C-102", new LatLng(18.2094404, -67.1412221)));
         celis1.add(new Places("C-103", new LatLng(18.2093860, -67.1410386)));
         celis1.add(new Places("C-104", new LatLng(18.2094305, -67.1411221)));
         celis1.add(new Places("C-105", new LatLng(18.2094205, -67.1410221)));
+        celis1.add(new Places("Bathroom",new LatLng(18.2095799, -67.14106221),"bathroom"));
 
 
         celis2.add(new Places("C-200", new LatLng(18.2094385, -67.14100001)));
@@ -212,6 +214,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         celis2.add(new Places("C-203", new LatLng(18.2094325, -67.1413261)));
         celis2.add(new Places("C-204", new LatLng(18.2091305, -67.1412281)));
         celis2.add(new Places("C-205", new LatLng(18.2090405, -67.1410321)));
+        celis2.add(new Places("Bathroom",new LatLng(18.2090799, -67.1410999),"bathroom"));
 
 
         /**
@@ -494,8 +497,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             currentMarkers.get(0).remove();
         }
         for(int i=0; i<celis1.size();i++) {
-            currentMarkers.add(map.addMarker(new MarkerOptions().position(celis1.get(i).getCords()).title(celis1.get(i).getName())));
 
+            if(celis1.get(i).getType()== "bathroom"){
+                currentMarkers.add(map.addMarker(new MarkerOptions().position(celis1.get(i).getCords()).title(celis1.get(i).getName())
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_marker))));
+            }
+            else {
+                currentMarkers.add(map.addMarker(new MarkerOptions().position(celis1.get(i).getCords()).title(celis1.get(i).getName())));
+            }
             }
         }
 ////////////////////////////
@@ -509,8 +518,15 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             while(currentMarkers.size()!=0){
                 currentMarkers.get(0).remove();
             }
+            //Testing custom icons. BitmapDescriptorFactory.fromResource(R.drawable.celis_piso1)
             for(int i=0; i<celis2.size();i++) {
-                currentMarkers.add(map.addMarker(new MarkerOptions().position(celis2.get(i).getCords()).title(celis2.get(i).getName())));
+                if(celis2.get(i).getType() == "bathroom"){
+                currentMarkers.add(map.addMarker(new MarkerOptions().position(celis2.get(i).getCords()).title(celis2.get(i).getName())
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_marker))));
+                }
+                else{
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(celis2.get(i).getCords()).title(celis2.get(i).getName())));
+                }
 
             }
 
