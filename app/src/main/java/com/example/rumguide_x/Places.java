@@ -5,11 +5,11 @@ import com.google.android.gms.maps.model.LatLng;
 public class Places {
 
     private String name;
-    private String location;
+    private String description;
     private LatLng cords;
-    private String floor;
-    private String id;
+    private int floor;
     private String type;
+    private String building;
 
     public  Places(String name, LatLng cords){
 this.name=name;
@@ -22,13 +22,13 @@ this.cords=cords;
         this.cords=cords;
     }
 
-    public Places(String name, String location, LatLng cords, String floor, String id, String type) {
+    public Places(String name, LatLng cords, int floor, String type, String building,String description) {
         this.name = name;
-        this.location = location;
         this.cords = cords;
         this.floor = floor;
-        this.id = id;
         this.type = type;
+        this.building=building;
+        this.description=description;
     }
 
     //Contructor
@@ -40,23 +40,30 @@ this.cords=cords;
         return name;
     }
 
-    public String getLocation() {
-        return location;
+//    public String getLocation() {
+//        return location;
+//    }
+    public String getDescription(){
+        return description;
     }
 
     public LatLng getCords() {
         return cords;
     }
 
-    public String getFloor() {
+    public int getFloor() {
         return floor;
     }
 
-    public String getId() {
-        return id;
-    }
+//    public String getId() {
+//        return id;
+//    }
 
     public String getType() {
         return type;
     }
+
+
+    public String getBuilding(){ return building;}
+
 }

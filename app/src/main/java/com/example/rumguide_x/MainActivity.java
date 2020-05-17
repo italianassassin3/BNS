@@ -13,6 +13,9 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -24,6 +27,7 @@ import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -34,6 +38,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.widget.Button;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,6 +69,7 @@ import java.util.Set;
  */
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback,BeaconConsumer, RangeNotifier {
+
 /** BEACON LAYOUT FORMATS
  *
  * ALTBEACON   "m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"
@@ -98,11 +104,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
      */
     private Button locateButton;
     private TextView txt;
+    private TextView bannertxt;
     private LatLng lastLocation;
     private Button changeFloorButton;
     private Button layerButton;
     private Button lookForBeacons;
     private Button stopSearch;
+    private SearchView searchBar;
 
 
     /**
@@ -129,6 +137,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<Places> celis1 = new ArrayList<>();
     private ArrayList<Places> celis2 = new ArrayList<>();
     private ArrayList<Places> celis3 = new ArrayList<>();
+    private ArrayList<Places> allMarkers= new ArrayList<>();
 
     /**
      * GroundOverlay definitions
@@ -147,6 +156,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        bannertxt= findViewById(R.id.banner);
+        Typeface customFont = Typeface.createFromAsset(getAssets(),"fonts/Pacifico-Regular.ttf");
+        bannertxt.setTypeface(customFont);
+
         //Asigna el mapa al fragment del view.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -155,6 +168,15 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         cycle = 0;//Variable para recorrer a traves de los pisos de stefani, solo para testing.
         //Actualmente no se esta utilizando.
         bluetoothManager= (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
+
+
+        searchBar = (SearchView)findViewById(R.id.searchView);
+        searchBar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchBar.setIconified(false);
+            }
+        });
 
         // Maneja el uso del gps.
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
@@ -170,13 +192,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         /**
          * Codigo en prueba, para obtener los marcadores desde text file.
+         * Carga el archivo del test.txt y crea un arrayList de Places
          */
-        Lector lector;
-        lector = new Lector(this);
-        ArrayList<String> fileLines =lector.readLine("test.txt");
-        for (String string : fileLines)
-            Log.d("FILE LINES:", string);
-
+        loadAllMarkers();
 
         /**
          *Codigo encargado de inicializar el manejador de Beacons.
@@ -228,6 +246,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         locateButton = (Button) findViewById(R.id.locateme);
         txt = findViewById(R.id.TEXTOPRUEBA);
+        txt.setVisibility(View.INVISIBLE);
+        txt.setTextColor(Color.WHITE);
 
 
         //Boton de simulacion de cambio de pisos.
@@ -279,8 +299,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 stopDetectingBeacons();
             }
         });
-        //Localizacion del edificio de Celis
-        LatLng celis = new LatLng(18.2093602, -67.1408958);
+        /*
+        *Localizacion del edificio de Celis
+        *
+        */
+        LatLng celis = new LatLng(18.2093646, -67.1409665);
 
         //Definir los GrounOverlays para usarse en Celis por ahora.
         celis_piso1 = new GroundOverlayOptions()
@@ -435,6 +458,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                  * Verifica que este encendido, no es directamente relacionado a los permisos.
                  */
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+
+                    if(locationManager==null){
+                        locationManager= (LocationManager)getSystemService(LOCATION_SERVICE);}
+
                             lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
                             locationManager.getLastKnownLocation("gps").getLongitude());
                             map.setMyLocationEnabled(true);
@@ -479,6 +506,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     map.getUiSettings().setCompassEnabled(false);
     map.setMaxZoomPreference(1000);
 
+
+
 }
 
     /**
@@ -496,14 +525,26 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         while(currentMarkers.size()!=0){
             currentMarkers.get(0).remove();
         }
-        for(int i=0; i<celis1.size();i++) {
-
-            if(celis1.get(i).getType()== "bathroom"){
-                currentMarkers.add(map.addMarker(new MarkerOptions().position(celis1.get(i).getCords()).title(celis1.get(i).getName())
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_marker))));
+        for(Places p : allMarkers) {
+            System.out.println(p.getBuilding());
+            if(p.getType().equals("bathroom_w") && p.getFloor()==1){
+                currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_women)).snippet(p.getDescription())));
             }
-            else {
-                currentMarkers.add(map.addMarker(new MarkerOptions().position(celis1.get(i).getCords()).title(celis1.get(i).getName())));
+            else if(p.getType().equals("bathroom_m") && p.getFloor()==1){
+                currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_men)).snippet(p.getDescription())));
+            }
+            else if(p.getType().equals("stairs") && p.getFloor()==1){
+                currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_w)).snippet(p.getDescription())));
+            }
+            else if(p.getType().equals("elevator") && p.getFloor()==1){
+                currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.elevator)).snippet(p.getDescription())));
+            }
+            else if(p.getFloor()==1 && p.getBuilding().equals("Celis")){
+                currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())));
             }
             }
         }
@@ -512,6 +553,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             if(activeOverlay !=null){ activeOverlay.remove();}
 
             txt.setText("edificio celis, Piso 2");
+            txt.setVisibility(View.VISIBLE);
             activeOverlay=map.addGroundOverlay(celis_piso2);
             cycle++;
 
@@ -522,8 +564,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             for(int i=0; i<celis2.size();i++) {
                 if(celis2.get(i).getType() == "bathroom"){
                 currentMarkers.add(map.addMarker(new MarkerOptions().position(celis2.get(i).getCords()).title(celis2.get(i).getName())
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_marker))));
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_marker)).snippet("Este bano no esta identificado, esto es una prueba vamos a ver cuando estapacion coge")));
                 }
+
                 else{
                     currentMarkers.add(map.addMarker(new MarkerOptions().position(celis2.get(i).getCords()).title(celis2.get(i).getName())));
                 }
@@ -672,6 +715,16 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         //Remover los beacons encontrados en el region
         mBeaconManager.removeAllRangeNotifiers();
         mBeaconManager.unbind(this);
+    }
+
+    private void loadAllMarkers(){
+        Lector lector;
+        lector = new Lector(this);
+        allMarkers =lector.readLine("test.txt");
+        for (Places p : allMarkers) {
+            Log.d("Places from text->", Integer.toString(p.getFloor()) );
+
+        }
     }
 
 
