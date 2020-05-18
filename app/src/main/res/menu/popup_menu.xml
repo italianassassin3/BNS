@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/celis1"
+        android:title="Celis 1">
+    </item>
+    <item android:id="@+id/celis2"
+        android:title="Celis 2">
+    </item>
+    <item android:id="@+id/celis3"
+        android:title="Celis 3">
+    </item>
+
+    <item android:id="@+id/quimica1"
+        android:title="Quimica 1">
+    </item>
+    <item android:id="@+id/quimica2"
+        android:title="Quimica 2">
+    </item>
+    <item android:id="@+id/quimica3"
+        android:title="Quimica 3">
+    </item>
+    <item android:id="@+id/quimica4"
+        android:title="Quimica 4">
+    </item>
+</menu>

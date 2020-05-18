@@ -11,6 +11,7 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -23,6 +24,7 @@ import android.os.Bundle;
 import android.os.RemoteException;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -38,6 +40,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.widget.Button;
+import android.widget.PopupMenu;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -68,7 +71,7 @@ import java.util.Set;
  * Beacon Consumer es para manejar el consumo de la informacion de los beacons
  */
 
-public class MainActivity extends FragmentActivity implements OnMapReadyCallback,BeaconConsumer, RangeNotifier {
+public class MainActivity extends FragmentActivity implements OnMapReadyCallback,BeaconConsumer, RangeNotifier, PopupMenu.OnMenuItemClickListener {
 
 /** BEACON LAYOUT FORMATS
  *
@@ -142,10 +145,21 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     /**
      * GroundOverlay definitions
      */
+    private  LatLng celis =new LatLng(18.2093646, -67.1409665);;
+    private  LatLng quimica =new LatLng(18.2127023, -67.1408143);;
     //Overlays disponibles, floor plans
+
     GroundOverlayOptions celis_piso1;
     GroundOverlayOptions celis_piso2;
     GroundOverlayOptions celis_piso3;
+    GroundOverlayOptions quim1;
+    GroundOverlayOptions quim2;
+    GroundOverlayOptions quim3;
+    GroundOverlayOptions quim4;
+
+    //Definir los GrounOverlays para usarse en Celis por ahora.
+
+
 
     /**
      * Al momento de correr la aplicacion se comienza por este metodo
@@ -178,8 +192,25 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+        searchBar.setOnQueryTextListener(
+                new SearchView.OnQueryTextListener() {
+                    @Override
+                    public boolean onQueryTextSubmit(String query) {
+                        lookFor(query);
+                        System.out.println(query);
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onQueryTextChange(String newText) {
+
+                        return false;
+                    }
+                }
+        );
+
         // Maneja el uso del gps.
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         //Codigo de prueba y debug, verificar error.
         if(locationManager!= null) Log.d("Loaction", "LocationManager no es nulo");
         else{Log.d("Loaction", "LocationManager es nulo");}
@@ -235,6 +266,34 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         celis2.add(new Places("Bathroom",new LatLng(18.2090799, -67.1410999),"bathroom"));
 
 
+         celis_piso1 = new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.drawable.celis_piso1))
+                .position(celis, 90).bearing(15);
+
+         celis_piso2 = new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.drawable.celis_piso2))
+                .position(celis, 90).bearing(15);
+
+         celis_piso3 = new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.drawable.celis_piso3))
+                .position(celis, 90).bearing(15);
+    /*
+    Definir los GrounOverlays para usarse en Quimica por ahora.
+    */
+
+         quim1=new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.drawable.quim1))
+                .position(quimica, 75).bearing(315);
+         quim2=new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.drawable.quim2))
+                .position(quimica, 75).bearing(315);
+         quim3=new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.drawable.quim3))
+                .position(quimica, 75).bearing(315);
+         quim4=new GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromResource(R.drawable.quim4))
+                .position(quimica, 75).bearing(315);
+
         /**
          * Manejando lo que hacen los botones.
          *         //Find view by id busca el elemento del view.
@@ -246,7 +305,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         locateButton = (Button) findViewById(R.id.locateme);
         txt = findViewById(R.id.TEXTOPRUEBA);
-        txt.setVisibility(View.INVISIBLE);
+        txt.setVisibility(View.VISIBLE);
         txt.setTextColor(Color.WHITE);
 
 
@@ -299,24 +358,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 stopDetectingBeacons();
             }
         });
-        /*
-        *Localizacion del edificio de Celis
-        *
-        */
-        LatLng celis = new LatLng(18.2093646, -67.1409665);
 
-        //Definir los GrounOverlays para usarse en Celis por ahora.
-        celis_piso1 = new GroundOverlayOptions()
-                .image(BitmapDescriptorFactory.fromResource(R.drawable.celis_piso1))
-                .position(celis, 100).bearing(15);
 
-        celis_piso2 = new GroundOverlayOptions()
-                .image(BitmapDescriptorFactory.fromResource(R.drawable.celis_piso2))
-                .position(celis, 100).bearing(15);
 
-        celis_piso3 = new GroundOverlayOptions()
-                .image(BitmapDescriptorFactory.fromResource(R.drawable.celis_piso3))
-                .position(celis, 100).bearing(15);
+
 
 
         changeFloorButton.setOnClickListener(new View.OnClickListener() {
@@ -460,14 +505,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 
                     if(locationManager==null){
-                        locationManager= (LocationManager)getSystemService(LOCATION_SERVICE);}
-
-                            lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
-                            locationManager.getLastKnownLocation("gps").getLongitude());
-                            map.setMyLocationEnabled(true);
-                            map.getUiSettings().setMyLocationButtonEnabled(false);
-                            map.getUiSettings().setMapToolbarEnabled(false);
-
+                        locationManager= (LocationManager)getSystemService(Context.LOCATION_SERVICE);}
+                            if(locationManager.getLastKnownLocation("gps")!=null) {
+                                lastLocation = new LatLng(locationManager.getLastKnownLocation("gps").getLatitude(),
+                                        locationManager.getLastKnownLocation("gps").getLongitude());
+                                map.setMyLocationEnabled(true);
+                                map.getUiSettings().setMyLocationButtonEnabled(false);
+                                map.getUiSettings().setMapToolbarEnabled(false);
+                            }
                             System.out.println("im here");
 //              currentMarkers.add( map.addMarker(new MarkerOptions().position(lastLocation).title("PRUEBA")) );
                     try {
@@ -524,6 +569,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         cycle++;
         while(currentMarkers.size()!=0){
             currentMarkers.get(0).remove();
+            currentMarkers.remove(0);
+
         }
         for(Places p : allMarkers) {
             System.out.println(p.getBuilding());
@@ -727,6 +774,151 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    private void lookFor(String query){
+        boolean match=false;
+        searchBar.setIconified(true);
+        searchBar.setIconified(true);
 
+        while(currentMarkers.size()!=0){
+            System.out.println((currentMarkers.get(0).getTitle()));
+            currentMarkers.get(0).remove();
+            currentMarkers.remove(0);
+        }
 
+        for(Places p : allMarkers){
+            if((p.getName().toLowerCase()).equals(query.toLowerCase())){
+                match=true;
+                //currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())));
+                if(p.getType().equals("bathroom_w") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_women)).snippet(p.getDescription().concat("Floor:"+p.getFloor()))));
+                }
+                else if(p.getType().equals("bathroom_m") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_men)).snippet(p.getDescription().concat("Floor:"+p.getFloor()))));
+                }
+                else if(p.getType().equals("stairs") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_w)).snippet(p.getDescription().concat("Floor:"+p.getFloor()))));
+                }
+                else if(p.getType().equals("elevator") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.elevator)).snippet(p.getDescription().concat("Floor:"+p.getFloor()))));
+                }
+                else {
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName().concat("Floor:"+p.getFloor()))));
+                }
+            }
+        }
+        if(match==false){ Toast.makeText(getApplicationContext(),"No Match Found", Toast.LENGTH_SHORT).show();}
+    }
+    public void showPopup(View v){
+        PopupMenu popup = new PopupMenu(this,v);
+        popup.setOnMenuItemClickListener(this);
+        popup.inflate(R.menu.popup_menu);
+        popup.show();
+    }
+    public void showHelp(View v){
+        PopupMenu help = new PopupMenu(this,v);
+        help.setOnMenuItemClickListener(this);
+        help.inflate(R.menu.help_menu);
+        help.show();
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+
+        if(item.getTitle().equals("Help")){
+            Toast.makeText(getApplicationContext(),"Report any problems or bugs to: bernardo.sein@upr.edu", Toast.LENGTH_LONG).show();
+        }
+        System.out.println(item.getTitle());
+        txt.setVisibility(TextView.VISIBLE);
+        if(item.getTitle().equals("Quimica 1")){
+            if(activeOverlay !=null){ activeOverlay.remove();}
+
+            txt.setText("Edificio Quimica, Piso 1");
+            activeOverlay= map.addGroundOverlay(quim1);
+            showMarkers("Quimica",1);
+        }
+        else if(item.getTitle().equals("Quimica 2")){
+            if(activeOverlay !=null){ activeOverlay.remove();}
+
+            txt.setText("Edificio Quimica, Piso 2");
+            activeOverlay= map.addGroundOverlay(quim2);
+            showMarkers("Quimica",2);
+        }
+        else if(item.getTitle().equals("Quimica 3")){
+            if(activeOverlay !=null){ activeOverlay.remove();}
+
+            txt.setText("Edificio Quimica, Piso 3");
+            activeOverlay= map.addGroundOverlay(quim3);
+            showMarkers("Quimica",3);
+        }
+        else if(item.getTitle().equals("Quimica 4")){
+            if(activeOverlay !=null){ activeOverlay.remove();}
+
+            txt.setText("Edificio Quimica, Piso 4");
+            activeOverlay= map.addGroundOverlay(quim4);
+            showMarkers("Quimica",4);
+        }
+        else if(item.getTitle().equals("Celis 1")){
+            if(activeOverlay !=null){ activeOverlay.remove();}
+
+            txt.setText("Edificio Celis, Piso 1");
+            activeOverlay= map.addGroundOverlay(celis_piso1);
+            showMarkers("Celis",1);
+        }
+        else if(item.getTitle().equals("Celis 2")){
+            if(activeOverlay !=null){ activeOverlay.remove();}
+
+            txt.setText("Edificio Celis, Piso 2");
+            activeOverlay= map.addGroundOverlay(celis_piso2);
+            showMarkers("Celis",2);
+        }
+        else if(item.getTitle().equals("Celis 3")){
+            if(activeOverlay !=null){ activeOverlay.remove();}
+
+            txt.setText("Edificio Celis, Piso 3");
+            activeOverlay= map.addGroundOverlay(celis_piso3);
+            showMarkers("Celis",3);
+        }
+        return false;
+    }
+
+    private void showMarkers(String title, int floor) {
+
+        while(currentMarkers.size()!=0){
+            currentMarkers.get(0).remove();
+            currentMarkers.remove(0);
+        }
+        for(Places p : allMarkers){
+            if((p.getBuilding().toLowerCase()).equals(title.toLowerCase()) && p.getFloor()==floor){
+
+                //currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())));
+                if(p.getType().equals("bathroom_w") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_women)).snippet(p.getDescription())));
+                }
+                else if(p.getType().equals("bathroom_m") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_men)).snippet(p.getDescription())));
+                }
+                else if(p.getType().equals("bathroom") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.bathroom_marker)).snippet(p.getDescription())));
+                }
+                else if(p.getType().equals("stairs") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.stairs_w)).snippet(p.getDescription())));
+                }
+                else if(p.getType().equals("elevator") ){
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.elevator)).snippet(p.getDescription())));
+                }
+                else {
+                    currentMarkers.add(map.addMarker(new MarkerOptions().position(p.getCords()).title(p.getName()).snippet(p.getDescription())));
+                }
+            }
+        }
+    }
 }

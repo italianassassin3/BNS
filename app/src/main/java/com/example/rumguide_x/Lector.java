@@ -89,13 +89,16 @@ public class Lector {
                     }
                     else if(temp.compareTo("Lat")==0){
                         System.out.println("Se encontro una Lat");
-                        if (multiTokenizer.hasMoreTokens()) {mLat=Float.parseFloat(multiTokenizer.nextToken());
+                        if (multiTokenizer.hasMoreTokens()) {
+                            try{mLat=Float.parseFloat(multiTokenizer.nextToken());}
+                            catch (Exception e){System.out.println("El token no pudo ser parseado");}
                             System.out.println(mLat);}
 
                         }
                     else if(temp.compareTo("Lng")==0){
                         System.out.println("Se encontro un Lng");
-                        if (multiTokenizer.hasMoreTokens()) {mLon=Float.parseFloat(multiTokenizer.nextToken());
+                        if (multiTokenizer.hasMoreTokens()) {try{mLon=Float.parseFloat(multiTokenizer.nextToken());}
+                        catch (Exception e){System.out.println("El token no pudo ser parseado");}
                             System.out.println(mLat);}
 
                     }
@@ -105,7 +108,8 @@ public class Lector {
                     }
                     else if(temp.compareTo("floor")==0){
                         System.out.println("Se encontro un floor");
-                        if(multiTokenizer.hasMoreTokens()){ mFloor= Integer.parseInt(multiTokenizer.nextToken()); }
+                        if(multiTokenizer.hasMoreTokens()){ try{mFloor= Integer.parseInt(multiTokenizer.nextToken());}
+                        catch (Exception e){System.out.println("No se introdujo un numero entero.");}}
                     }
                     else if(temp.compareTo("building")==0){
                         System.out.println("Se encontro un building");

@@ -5,7 +5,7 @@
 
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
+    android:orientation="vertical"
     tools:context=".MainActivity">
     <!--    android:backgroundTint="#020202"-->
     <!--    android:background="#FFFFFF" -->
@@ -60,8 +60,8 @@
         android:layout_height="wrap_content"
         android:background="@drawable/text_bc"
         android:padding="5dp"
-        android:text="Testing"
-        android:textColor="#000"
+        android:text=""
+        android:textColor="#FFFF"
         android:textSize="14sp"
 
         android:textStyle="bold"
@@ -74,42 +74,47 @@
 
     <Button
         android:id="@+id/floorChange"
-        android:layout_width="wrap_content"
+        android:layout_width="50dp"
         android:layout_height="wrap_content"
+        android:background="@drawable/custom_button"
+        android:visibility="gone"
         android:text="change floor"
         android:textSize="10sp"
+        android:textColor="#FFFF"
         app:layout_constraintBottom_toTopOf="@+id/locateme"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.898"
+        app:layout_constraintHorizontal_bias="0.964"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.856" />
+        app:layout_constraintVertical_bias="0.852" />
 
     <Button
         android:id="@+id/layerButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Change View"
+        android:layout_width="40dp"
+        android:layout_height="34dp"
+        android:background="@android:drawable/ic_dialog_map"
+        android:text="View"
         android:textSize="10sp"
         app:layout_constraintBottom_toBottomOf="@+id/map"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.054"
+        app:layout_constraintHorizontal_bias="0.039"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.278" />
+        app:layout_constraintVertical_bias="0.179" />
 
     <Button
         android:id="@+id/beaconsearch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="55dp"
+        android:layout_height="24dp"
+        android:background="@color/cardview_light_background"
         android:text="beacon test"
         android:textSize="8sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.049"
+        app:layout_constraintHorizontal_bias="0.022"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/layerButton"
-        app:layout_constraintVertical_bias="0.125" />
+        app:layout_constraintVertical_bias="0.536" />
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -148,14 +153,15 @@
     <Button
         android:id="@+id/stopSearch"
         style="@style/Widget.AppCompat.Button.Small"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="52dp"
+        android:layout_height="24dp"
         android:layout_marginTop="36dp"
+        android:background="@color/cardview_light_background"
         android:text="stop search"
         android:textSize="8sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.048"
+        app:layout_constraintHorizontal_bias="0.021"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/beaconsearch"
         app:layout_constraintVertical_bias="0.0" />
@@ -173,6 +179,35 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="1.0" />
+
+    <Button
+        android:id="@+id/menu"
+        android:layout_width="103dp"
+        android:layout_height="35dp"
+        android:background="@drawable/custom_squarebutton"
+        android:onClick="showPopup"
+        android:text="Available floor plans"
+        android:textColor="#FFFF"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toTopOf="@+id/toolbar2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.047"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/toolbar"
+        app:layout_constraintVertical_bias="0.901" />
+
+    <Button
+        android:id="@+id/helpmenu"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:background="@android:drawable/ic_dialog_info"
+        android:onClick="showHelp"
+        app:layout_constraintBottom_toTopOf="@+id/map"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.968"
+        app:layout_constraintStart_toStartOf="@+id/toolbar"
+        app:layout_constraintTop_toTopOf="@+id/toolbar"
+        app:layout_constraintVertical_bias="0.888" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

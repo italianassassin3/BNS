@@ -1,9 +1,9 @@
 name:Bathroom,Lat:18.2095799,Lng:-67.14106221,type:bathroom_w,description:bano para impedidos.,building:Celis,floor:1
-name:Bathroom,Lat:18.2090799,Lng:-67.14108221,type:bathroom_m,description:bano de hombre.,building:Celis,floor:1
+name:Bathroom,Lat:18.2095099,Lng:-67.14108221,type:bathroom_m,description:bano de hombre.,building:Celis,floor:1
 name:Stairs,Lat:18.2094143,Lng:-67.1411067,type:stairs,description: ,building:Celis,floor:1
 name:C-101,Lat:18.2095064,Lng:-67.1413221,type:room,description: ,building:Celis,floor:1
 name:C-102,Lat:18.2094404,Lng:-67.1412221,type:room,description: ,building:Celis,floor:1
-name:Elevator,Lat:18.20092490,Lng:-67.1407694,type:elevator,description:Ascensor general,building:Celis,floor:3
+name:Elevator,Lat:18.2092490,Lng:-67.1407694,type:elevator,description:Ascensor general,building:Celis,floor:3
 name:C-103,Lat:18.2094305,Lng:-67.1410386,type:room,description: ,building:Celis,floor:1
 name:C-104,Lat:18.2094239,Lng:-67.1407439,type:room,description: ,building:Celis,floor:1
 name:Elevator,Lat:18.2092490,Lng:-67.1407694,type:elevator,description:Ascensor general,building:Celis,floor:1
@@ -12,3 +12,17 @@ name:C-202,Lat:18.2092365,Lng:-67.1410241,type:room,description: ,building:Celis
 name:C-203,Lat:18.2093345,Lng:-67.1413261,type:room,description: ,building:Celis,floor:2
 name:C-204,Lat:18.2090405,Lng:-67.1412281,type:room,description: ,building:Celis,floor:2
 name:Elevator,Lat:18.20092490,Lng:-67.1407694,type:elevator,description:Ascensor general,building:Celis,floor:2
+name:Q-201,Lat:18.2128581,Lng:-67.1409880,type:room,description: ,building:Quimica,floor:2
+name:Q-202,Lat:18.2125641,Lng:-67.1406655,type:room,description: ,building:Quimica,floor:2
+name:Q-203,Lat:18.2093345,Lng:-67.1413261,type:room,description: ,building:Quimica,floor:2
+name:Q-204,Lat:18.2090405,Lng:-67.1412281,type:room,description: ,building:Quimica,floor:2
+name:Stairs,Lat:18.2127074,Lng:-67.1407935,type:stairs,description: ,building:Quimica,floor:2
+name:Stairs,Lat:18.2127074,Lng:-67.1407935,type:stairs,description: ,building:Quimica,floor:3
+name:Stairs,Lat:18.2127074,Lng:-67.1407935,type:stairs,description: ,building:Quimica,floor:1
+name:Stairs,Lat:18.2127074,Lng:-67.1407935,type:stairs,description: ,building:Quimica,floor:4
+name:Bathroom,Lat:18.2128727,Lng:-67.1408331,type:bathroom,description: Solo para empleados ,building:Quimica,floor:1
+name:Bathroom,Lat:18.2128727,Lng:-67.1408331,type:bathroom_w,description: ,building:Quimica,floor:2
+name:Bathroom,Lat:18.2128727,Lng:-67.1408831,type:bathroom_m,description: ,building:Quimica,floor:2
+name:Bathroom,Lat:18.2128727,Lng:-67.1408331,type:bathroom_m,description: ,building:Quimica,floor:3
+name:Bathroom,Lat:18.2128727,Lng:-67.1408831,type:bathroom_w,description: ,building:Quimica,floor:3
+name: ,Lat: a,Lng:-s831,type:som_w,s: ,building: ,floor:
